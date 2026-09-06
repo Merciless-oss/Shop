@@ -1,31 +1,198 @@
-body{font-family:sans-serif;background:#f4f4f5;margin:0;padding:15px;padding-bottom:90px;}
-h2{text-align:center;}
-.products{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.card{background:#fff;border-radius:10px;padding:10px;}
-.card img{width:100%;height:100px;object-fit:cover;border-radius:6px;}
-.title{font-weight:bold;font-size:14px;margin:5px 0;}
-.price{color:green;font-weight:bold;margin-bottom:8px;}
-.btn{background:#2481cc;color:#fff;border:none;padding:8px;border-radius:6px;width:100%;font-weight:bold;}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Haze Shop</title>
+    <!-- Подключаем SDK Telegram -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        /* Насыщенный дизайн с неоновыми элементами */
+        body {
+            /* Можно заменить URL на картинку с сакурой или киберпанк-фоном */
+            background-color: #1a0b2e;
+            background-image: linear-gradient(45deg, #120424 25%, transparent 25%, transparent 75%, #120424 75%, #120424), 
+                              linear-gradient(45deg, #120424 25%, transparent 25%, transparent 75%, #120424 75%, #120424);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
-🛒 Каталог товаров
+        .header {
+            text-align: center;
+            font-size: 2.5em;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #ff007f;
+            border-bottom: 2px solid #ff007f;
+            padding-bottom: 15px;
+        }
 
-const tg = window.Telegram.WebApp; tg.expand();
-const products = [
-  {id:1, name:"Товар 1", price:500, img:"https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300"},
-  {id:2, name:"Товар 2", price:1200, img:"https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300"},
-  {id:3, name:"Товар 3", price:850, img:"https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300"},
-  {id:4, name:"Товар 4", price:2100, img:"https://images.unsplash.com/photo-1583394838336-acd977736f90?w=300"}
-];
-let cart = [];
-const catalog = document.getElementById('catalog');
-products.forEach(p => {
-  catalog.innerHTML += `<div class="card"><img src="${p.img}"><div class="title">${p.name}</div><div class="price">${p.price} ₽</div><button class="btn" onclick="add(${p.id})">В корзину</button></div>`;
-});
-function add(id){
-  cart.push(products.find(p=>p.id===id));
-  let total = cart.reduce((s,i)=>s+i.price,0);
-  tg.MainButton.setText(`Оформить заказ (${total} ₽)`).show();
-}
-tg.MainButton.onClick(()=>{
-  tg.sendData(JSON.stringify({items:cart.map(i=>i.name)}));
-});
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .product-card {
+            background: rgba(30, 15, 50, 0.9);
+            border: 1px solid #ff007f;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: inset 0 0 15px rgba(255, 0, 127, 0.2), 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:active {
+            transform: scale(0.95);
+        }
+
+        .product-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px dashed #ff007f;
+            margin-bottom: 10px;
+        }
+
+        .product-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffb3d9;
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+
+        .product-price {
+            color: #00ffff;
+            font-size: 1.3em;
+            font-weight: 900;
+            margin-bottom: 12px;
+            text-shadow: 0 0 8px #00ffff;
+        }
+
+        .buy-btn {
+            background: linear-gradient(90deg, #ff007f, #9900ff);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">HAZE SHOP</div>
+
+    <!-- Контейнер, куда JavaScript загрузит товары -->
+    <div class="product-grid" id="catalog"></div>
+
+    <script>
+        // Инициализация Telegram объекта
+        const tg = window.Telegram.WebApp;
+        
+        // Разворачиваем приложение на весь экран телефона
+        tg.expand(); 
+        
+        // Настраиваем цвета шапки Telegram под стиль сайта
+        tg.setHeaderColor('#1a0b2e');
+
+        // Массив товаров (твоя локальная база данных)
+        const products = [
+            { 
+                id: 'item_1', 
+                name: 'Худи Cyber-Sakura', 
+                price: 3500, 
+                img: 'https://via.placeholder.com/300x300/ff007f/ffffff?text=Hoodie' 
+            },
+            { 
+                id: 'item_2', 
+                name: 'Постер Аниме А3', 
+                price: 800, 
+                img: 'https://via.placeholder.com/300x300/9900ff/ffffff?text=Poster' 
+            },
+            { 
+                id: 'item_3', 
+                name: 'Неоновая вывеска', 
+                price: 4200, 
+                img: 'https://via.placeholder.com/300x300/00ffff/000000?text=Neon' 
+            },
+            { 
+                id: 'item_4', 
+                name: 'Стикерпак', 
+                price: 350, 
+                img: 'https://via.placeholder.com/300x300/ff007f/ffffff?text=Stickers' 
+            }
+        ];
+
+        let cart = [];
+        const catalogContainer = document.getElementById('catalog');
+
+        // Функция отрисовки товаров
+        function renderProducts() {
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${product.img}" class="product-img" alt="${product.name}">
+                    <div class="product-title">${product.name}</div>
+                    <div class="product-price">${product.price} ₽</div>
+                    <button class="buy-btn" onclick="addToCart('${product.id}')">В корзину</button>
+                `;
+                catalogContainer.appendChild(card);
+            });
+        }
+
+        // Логика добавления в корзину
+        window.addToCart = function(productId) {
+            const product = products.find(p => p.id === productId);
+            cart.push(product);
+
+            // Активируем нижнюю главную кнопку Telegram
+            tg.MainButton.text = `ОФОРМИТЬ ЗАКАЗ (${cart.length} шт.) - ${calculateTotal()} ₽`;
+            tg.MainButton.color = '#ff007f';
+            tg.MainButton.show();
+        };
+
+        // Подсчет общей суммы
+        function calculateTotal() {
+            return cart.reduce((sum, item) => sum + item.price, 0);
+        }
+
+        // Обработчик нажатия на главную кнопку
+        tg.MainButton.onClick(() => {
+            // Формируем данные заказа для бота
+            const orderData = {
+                action: 'checkout',
+                items: cart,
+                totalPrice: calculateTotal()
+            };
+
+            // Метод sendData работает, если Web App открыт через KeyboardButton
+            tg.sendData(JSON.stringify(orderData));
+            
+            // Закрываем окно после отправки
+            tg.close();
+        });
+
+        // Запуск рендера при загрузке страницы
+        renderProducts();
+    </script>
+</body>
+</html>
